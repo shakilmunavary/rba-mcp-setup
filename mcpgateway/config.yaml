@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+binds:
+- port: 6000
+  listeners:
+  - routes:
+    - policies:
+        cors:
+          allowOrigins:
+          - "*"
+          allowHeaders:
+          - "*"
+          exposeHeaders:
+          - "Mcp-Session-Id"
+        apiKey:
+          mode: strict
+          keys:
+          - key: "O0tYdWFfNG5rOXpScjJ2blA4N3FqdzBwT2k1R21iMTE="
+      backends:
+      - mcp:
+          targets:
+          - name: jenkins
+            mcp:
+              host: "http://jenkins-mcp:6500/mcp"
+          - name: github
+            mcp:
+              host: "http://github-mcp:6501/mcp"
+          - name: gitlab
+            mcp:
+              host: "http://gitlab-mcp:6502/mcp"
+          - name: snow
+            mcp:
+              host: "http://snow-mcp:6503/mcp"
+          - name: sonar
+            mcp:
+              host: "http://sonar-mcp:6504/mcp"

@@ -1,0 +1,145 @@
+version: "3.9"
+
+networks:
+  mcp-net:
+    driver: bridge
+
+x-common: &common
+  restart: unless-stopped
+  networks:
+    - mcp-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "50m"
+      max-file: "5"
+
+services:
+
+  jenkins-mcp:
+    <<: *common
+    build:
+      context: ./jenkins
+    container_name: jenkins-mcp
+    ports:
+      - "6500:6500"
+    environment:
+      JENKINS_URL:        ${JENKINS_URL}
+      JENKINS_USERNAME:   ${JENKINS_USERNAME:-admin}
+      JENKINS_TOKEN:      ${JENKINS_TOKEN}
+      JENKINS_VERIFY_SSL: ${JENKINS_VERIFY_SSL:-false}
+      MCP_SECRET_TOKEN:   ""
+      PORT:               "6500"
+    healthcheck:
+      test: ["CMD","python3","-c","import urllib.request; urllib.request.urlopen('http://localhost:6500/health',timeout=5)"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+      start_period: 20s
+
+  github-mcp:
+    <<: *common
+    build:
+      context: ./github
+    container_name: github-mcp
+    ports:
+      - "6501:6501"
+    environment:
+      GITHUB_URL:        ${GITHUB_URL:-https://api.github.com}
+      GITHUB_PAT:        ${GITHUB_PAT}
+      GITHUB_ORG:        ${GITHUB_ORG:-}
+      GITHUB_VERIFY_SSL: ${GITHUB_VERIFY_SSL:-true}
+      MCP_SECRET_TOKEN:  ""
+      PORT:              "6501"
+    healthcheck:
+      test: ["CMD","python3","-c","import urllib.request; urllib.request.urlopen('http://localhost:6501/health',timeout=5)"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+      start_period: 20s
+
+  gitlab-mcp:
+    <<: *common
+    build:
+      context: ./gitlab
+    container_name: gitlab-mcp
+    ports:
+      - "6502:6502"
+    environment:
+      GITLAB_URL:        ${GITLAB_URL:-https://gitlab.com}
+      GITLAB_TOKEN:      ${GITLAB_TOKEN}
+      GITLAB_VERIFY_SSL: ${GITLAB_VERIFY_SSL:-true}
+      MCP_SECRET_TOKEN:  ""
+      PORT:              "6502"
+    healthcheck:
+      test: ["CMD","python3","-c","import urllib.request; urllib.request.urlopen('http://localhost:6502/health',timeout=5)"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+      start_period: 20s
+
+  snow-mcp:
+    <<: *common
+    build:
+      context: ./snow
+    container_name: snow-mcp
+    ports:
+      - "6503:6503"
+    environment:
+      SNOW_URL:         ${SNOW_URL}
+      SNOW_USERNAME:    ${SNOW_USERNAME:-admin}
+      SNOW_PASSWORD:    ${SNOW_PASSWORD}
+      SNOW_VERIFY_SSL:  ${SNOW_VERIFY_SSL:-true}
+      MCP_SECRET_TOKEN: ""
+      PORT:             "6503"
+    healthcheck:
+      test: ["CMD","python3","-c","import urllib.request; urllib.request.urlopen('http://localhost:6503/health',timeout=5)"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+      start_period: 20s
+
+  sonar-mcp:
+    <<: *common
+    build:
+      context: ./sonar
+    container_name: sonar-mcp
+    ports:
+      - "6504:6504"
+    environment:
+      SONARQUBE_URL:    ${SONARQUBE_URL}
+      SONAR_TOKEN:      ${SONAR_TOKEN}
+      SONAR_VERIFY_SSL: ${SONAR_VERIFY_SSL:-false}
+      MCP_SECRET_TOKEN: ""
+      PORT:             "6504"
+    healthcheck:
+      test: ["CMD","python3","-c","import urllib.request; urllib.request.urlopen('http://localhost:6504/health',timeout=5)"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+      start_period: 20s
+
+  mcp-gateway:
+    <<: *common
+    image: cr.agentgateway.dev/agentgateway:v1.1.0
+    container_name: mcp-gateway
+    ports:
+      - "6000:6000"
+      - "15000:15000"
+    volumes:
+      - ./config.yaml:/config.yaml
+    environment:
+      ADMIN_ADDR:       "0.0.0.0:15000"
+      MCP_SECRET_TOKEN: ${MCP_SECRET_TOKEN}
+    command: ["-f", "/config.yaml"]
+    depends_on:
+      jenkins-mcp:
+        condition: service_healthy
+      github-mcp:
+        condition: service_healthy
+      gitlab-mcp:
+        condition: service_healthy
+      snow-mcp:
+        condition: service_healthy
+      sonar-mcp:
+        condition: service_healthy

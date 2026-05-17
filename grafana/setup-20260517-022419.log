@@ -1,0 +1,160 @@
+
+══════════════════════════════════════════════════════
+  Monitoring Stack — Non-Dockerized v1.2
+══════════════════════════════════════════════════════
+  Home Dir     : /home/rba/grafana
+  Install Dir  : /home/rba/grafana/monitoring
+  Active Apps  : 1
+  Grafana      : port 30750
+  Loki         : port 3100
+  Processor    : port 30751
+  Agent URL    : https://b782c8c3-cbd5-4149-afbb-12e910b18d33.aidevops.global.app.aws/dashboard
+  Log          : /home/rba/grafana/setup-20260517-022419.log
+
+Starting in 5 seconds — Ctrl+C to cancel...
+
+══════════════════════════════════════════════════════
+  PHASE 1 — Prerequisites
+══════════════════════════════════════════════════════
+
+[02:24:24] Installing Python packages (flask + boto3)...
+  ✅ Python packages: flask + boto3
+  ✅ Directories created under /home/rba/grafana
+
+══════════════════════════════════════════════════════
+  PHASE 2 — Stop + Remove Previous Installation
+══════════════════════════════════════════════════════
+
+  ✅ Previous services stopped
+
+══════════════════════════════════════════════════════
+  PHASE 3 — Install Grafana
+══════════════════════════════════════════════════════
+
+  ✅ Grafana already installed: Version 13.0.1+security-01 (commit: 9bbe672d, branch: release-13.0.1+security-01)
+Synchronizing state of grafana-server.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
+Executing: /usr/lib/systemd/systemd-sysv-install enable grafana-server
+Created symlink /etc/systemd/system/multi-user.target.wants/grafana-server.service → /usr/lib/systemd/system/grafana-server.service.
+  ✅ Grafana running on port 30750
+
+══════════════════════════════════════════════════════
+  PHASE 4 — Install Loki
+══════════════════════════════════════════════════════
+
+[02:26:13] Downloading Loki 3.4.2...
+Archive:  /tmp/loki.zip
+  inflating: /home/rba/grafana/monitoring/loki/loki-linux-amd64  
+  ✅ Loki binary: /home/rba/grafana/monitoring/loki/loki
+Created symlink /etc/systemd/system/multi-user.target.wants/loki.service → /etc/systemd/system/loki.service.
+  ⏳ Loki HTTP 503 (1/12)...
+  ⏳ Loki HTTP 503 (2/12)...
+  ✅ Loki running on port 3100
+
+══════════════════════════════════════════════════════
+  PHASE 5 — Install Promtail
+══════════════════════════════════════════════════════
+
+[02:26:41] Downloading Promtail 3.4.2...
+Archive:  /tmp/promtail.zip
+  inflating: /home/rba/grafana/monitoring/promtail/promtail-linux-amd64  
+  ✅ Promtail binary: /home/rba/grafana/monitoring/promtail/promtail
+Created symlink /etc/systemd/system/multi-user.target.wants/promtail.service → /etc/systemd/system/promtail.service.
+  ✅ Promtail running (scraping /var/log/pods/)
+
+══════════════════════════════════════════════════════
+  PHASE 6 — Alert Processor (Flask + dedup fix)
+══════════════════════════════════════════════════════
+
+  ✅ App profiles: /home/rba/grafana/monitoring/processor/profiles.json
+  ✅ Alert processor written: /home/rba/grafana/monitoring/processor/app.py
+Created symlink /etc/systemd/system/multi-user.target.wants/devops-alert-processor.service → /etc/systemd/system/devops-alert-processor.service.
+[02:26:47] Waiting for alert processor (up to 90s)...
+  ⏳ Processor HTTP 000000 (1/18)...
+  ✅ Alert processor running on port 30751
+
+══════════════════════════════════════════════════════
+  PHASE 7 — Configure Grafana (datasource + alert rules + routing)
+══════════════════════════════════════════════════════
+
+[02:26:52] Registering Loki datasource...
+  ✅ Loki datasource UID: ffmadznvkwkjkf
+[02:26:52] Creating alert folder...
+  ✅ Folder UID: cfmaljnujp1q8c
+[02:26:52] Creating alert rule: Java User App - Minikube (ns=default)...
+  ✅   Rule created: Java User App - Minikube
+[02:26:52] Creating contact point → alert processor...
+  ✅ Contact point created
+[02:26:52] Setting routing policy (Grafana 13 fix)...
+[02:26:53]   Default receiver: empty
+  ✅ Routing policy set ✅
+
+══════════════════════════════════════════════════════
+  PHASE 8 — Verification
+══════════════════════════════════════════════════════
+
+
+[02:26:53] Service status:
+  ✅ grafana-server
+  ✅ loki
+  ✅ promtail
+  ✅ devops-alert-processor
+
+  ✅ Grafana   : http://localhost:30750
+  ✅ Loki      : http://localhost:3100
+  ✅ Processor : http://localhost:30751
+[02:26:53] Testing ServiceNow...
+  ✅ ServiceNow : test ticket INC0010051 ✅
+[02:26:54] Testing DevOps Agent...
+  ✅ DevOps Agent : webhook OK ✅
+[02:26:55] Sending test email...
+  ⚠️  Email        : {"email_sent":false,"recipient":"shakil.munavary@cognizant.com","result":"An error occurred (MessageRejected) when calling the SendEmail operation: Email address is not verified. The following identities failed the check in region US-WEST-2: shakil.munavary@cognizant.com, shakil.munavary@gmail.com","sender":"shakil.munavary@gmail.com"}
+  ✅ Start script saved: /home/rba/grafana/start-monitoring.sh
+
+══════════════════════════════════════════════════════
+  ✅  MONITORING STACK v1.2 READY
+══════════════════════════════════════════════════════
+
+  📁 HOME DIR      : /home/rba/grafana
+     setup log     : /home/rba/grafana/setup-20260517-022419.log
+     start script  : /home/rba/grafana/start-monitoring.sh
+     service logs  : /home/rba/grafana/logs/
+
+  📊 GRAFANA
+     Local    : http://localhost:30750
+     EC2      : http://:30750
+     Domain   : https://devopsatkmcptools.com/grafana
+     Login    : admin / admin123
+     Alerts   : http://localhost:30750/alerting/list
+
+  📱 MONITORED APPS
+     App 1 : Java User App - Minikube (ns: default)
+
+  🤖 AWS DEVOPS AGENT  : true
+     Space URL : https://b782c8c3-cbd5-4149-afbb-12e910b18d33.aidevops.global.app.aws/dashboard
+  📧 EMAIL             : false
+  🎫 SNOW TEST TICKET  : INC0010051
+
+  🔧 ALB TARGET GROUP
+     Protocol : HTTP   Port: 30750   Health: /api/health
+
+  🔍 ALERT FLOW
+     /var/log/pods/ → Promtail → Loki
+       └─▶ Grafana fires after 120s
+             └─▶ Processor (dedup: memory + SNOW)
+                   ├─▶ SNOW ticket (no duplicates)
+                   ├─▶ AWS DevOps Agent
+                   └─▶ RCA email after 90s
+
+  🛠️  COMMANDS
+     /home/rba/grafana/start-monitoring.sh     # start if down
+     systemctl restart devops-alert-processor
+     tail -f /home/rba/grafana/logs/processor.log
+
+  🧪 TEST
+     curl -s http://localhost:30751/health     | jq .
+     curl -s http://localhost:30751/test-snow  | jq .
+     curl -s http://localhost:30751/test-agent | jq .
+     curl -s http://localhost:30751/test-email | jq .
+
+  Log: /home/rba/grafana/setup-20260517-022419.log
+══════════════════════════════════════════════════════

@@ -1,0 +1,44 @@
+# agentgateway config for MCP Gateway
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+binds:
+- port: 6000
+  listeners:
+  - routes:
+    - policies:
+        cors:
+          allowOrigins: ["*"]
+          allowHeaders: [mcp-protocol-version, content-type, cache-control, authorization]
+          exposeHeaders: ["Mcp-Session-Id"]
+      backends:
+      - mcp:
+          targets:
+          - name: jenkins
+            streamableHttp:
+              host: jenkins-mcp
+              port: 6500
+              headers:
+                Authorization: "Bearer ${MCP_SECRET_TOKEN}"
+          - name: github
+            streamableHttp:
+              host: github-mcp
+              port: 6501
+              headers:
+                Authorization: "Bearer ${MCP_SECRET_TOKEN}"
+          - name: gitlab
+            streamableHttp:
+              host: gitlab-mcp
+              port: 6502
+              headers:
+                Authorization: "Bearer ${MCP_SECRET_TOKEN}"
+          - name: snow
+            streamableHttp:
+              host: snow-mcp
+              port: 6503
+              headers:
+                Authorization: "Bearer ${MCP_SECRET_TOKEN}"
+          - name: sonar
+            streamableHttp:
+              host: sonar-mcp
+              port: 6504
+              headers:
+                Authorization: "Bearer ${MCP_SECRET_TOKEN}"

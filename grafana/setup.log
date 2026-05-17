@@ -1,0 +1,160 @@
+
+root@ip-10-0-153-61:/home/rba/grafana# ./grafana.sh
+
+══════════════════════════════════════════════════════
+  Monitoring Stack — Non-Dockerized v1.1
+══════════════════════════════════════════════════════
+  Active Apps  : 1
+  Grafana      : port 30750
+  Loki         : port 3100
+  Processor    : port 30751
+  Install dir  : /opt/devops-monitoring
+  Log          : /tmp/monitoring-setup-20260517-011940.log
+
+Starting in 5 seconds — Ctrl+C to cancel...
+
+══════════════════════════════════════════════════════
+  PHASE 1 — Prerequisites
+══════════════════════════════════════════════════════
+
+[01:19:45] Installing Python packages (flask + boto3)...
+  ✅ Python packages: flask + boto3
+  ✅ Install dir: /opt/devops-monitoring
+
+══════════════════════════════════════════════════════
+  PHASE 2 — Stop + Remove Previous Installation
+══════════════════════════════════════════════════════
+
+  ✅ Previous services stopped
+
+══════════════════════════════════════════════════════
+  PHASE 3 — Install Grafana
+══════════════════════════════════════════════════════
+
+  ✅ Grafana already installed: Version 13.0.1+security-01 (commit: 9bbe672d, branch: release-13.0.1+security-01)
+Synchronizing state of grafana-server.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
+Executing: /usr/lib/systemd/systemd-sysv-install enable grafana-server
+Created symlink /etc/systemd/system/multi-user.target.wants/grafana-server.service → /usr/lib/systemd/system/grafana-server.service.
+  ✅ Grafana running on port 30750
+
+══════════════════════════════════════════════════════
+  PHASE 4 — Install Loki
+══════════════════════════════════════════════════════
+
+  ✅ Loki binary: /opt/devops-monitoring/loki/loki
+Created symlink /etc/systemd/system/multi-user.target.wants/loki.service → /etc/systemd/system/loki.service.
+  ⏳ Loki HTTP 503 (1/12)...
+  ⏳ Loki HTTP 503 (2/12)...
+  ✅ Loki running on port 3100
+
+══════════════════════════════════════════════════════
+  PHASE 5 — Install Promtail
+══════════════════════════════════════════════════════
+
+  ✅ Promtail binary: /opt/devops-monitoring/promtail/promtail
+Created symlink /etc/systemd/system/multi-user.target.wants/promtail.service → /etc/systemd/system/promtail.service.
+  ✅ Promtail running (scraping /var/log/pods/)
+
+══════════════════════════════════════════════════════
+  PHASE 6 — Alert Processor (Flask systemd service)
+══════════════════════════════════════════════════════
+
+  ✅ App profiles: /opt/devops-monitoring/processor/profiles.json
+  ✅ Alert processor written: /opt/devops-monitoring/processor/app.py
+Created symlink /etc/systemd/system/multi-user.target.wants/devops-alert-processor.service → /etc/systemd/system/devops-alert-processor.service.
+[01:22:04] Waiting for alert processor (up to 90s)...
+  ⏳ Processor HTTP 000000 (1/18)...
+  ✅ Alert processor running on port 30751
+
+══════════════════════════════════════════════════════
+  PHASE 7 — Configure Grafana (datasource + alert rules + contact point + routing)
+══════════════════════════════════════════════════════
+
+[01:22:09] Registering Loki datasource...
+  ✅ Loki datasource UID: ffmadznvkwkjkf
+[01:22:10] Creating alert folder...
+  ✅ Folder UID: efmafrubjyy2oc
+[01:22:10] Creating alert rule: Java User App - Minikube (ns=default)...
+  ✅   Rule created: Java User App - Minikube
+[01:22:10] Creating contact point → alert processor...
+  ✅ Contact point created
+[01:22:10] Setting routing policy (Grafana 13 fix)...
+[01:22:10]   Default receiver: empty
+  ✅ Routing policy set ✅
+
+══════════════════════════════════════════════════════
+  PHASE 8 — Verification
+══════════════════════════════════════════════════════
+
+
+[01:22:10] Service status:
+  ✅ grafana-server
+  ✅ loki
+  ✅ promtail
+  ✅ devops-alert-processor
+
+  ✅ Grafana        : http://localhost:30750
+  ✅ Loki           : http://localhost:3100
+  ✅ Alert Processor: http://localhost:30751
+[01:22:10] Testing ServiceNow...
+  ✅ ServiceNow     : test ticket INC0010047 ✅
+[01:22:13] Testing DevOps Agent...
+  ✅ DevOps Agent   : webhook OK ✅
+[01:22:14] Sending test email...
+  ⚠️  Email          : {"email_sent":false,"recipient":"shakil.munavary@cognizant.com","result":"An error occurred (MessageRejected) when calling the SendEmail operation: Email address is not verified. The following identities failed the check in region US-WEST-2: shakil.munavary@cognizant.com, shakil.munavary@gmail.com","sender":"shakil.munavary@gmail.com"}
+
+══════════════════════════════════════════════════════
+  ✅  NON-DOCKERIZED MONITORING STACK v1.1 READY
+══════════════════════════════════════════════════════
+
+  📊 GRAFANA
+     Local    : http://localhost:30750
+     EC2      : http://:30750
+     Domain   : https://devopsatkmcptools.com  (after ALB TG → port 30750)
+     Login    : admin / admin123
+     Alerts   : http://localhost:30750/alerting/list
+
+  📱 MONITORED APPS
+     App 1  : Java User App - Minikube (ns: default)
+
+  🤖 AWS DEVOPS AGENT  : true
+  📧 EMAIL             : false
+  🎫 SNOW TEST TICKET  : INC0010047
+
+  🔧 ALB TARGET GROUP (manual — AWS Console)
+     Type     : Instance   Protocol: HTTP   Port: 30750
+     Health   : /api/health
+
+  🔍 ALERT FLOW
+     /var/log/pods/ → Promtail → Loki (localhost:3100)
+       └─▶ Grafana checks every 1m (fires after 120s)
+             └─▶ Webhook → localhost:30751
+                   ├─▶ SNOW ticket (deduped)
+                   ├─▶ AWS DevOps Agent (HMAC webhook)
+                   └─▶ RCA email after 90s
+
+  🛠️  SERVICE COMMANDS
+     systemctl status grafana-server loki promtail devops-alert-processor
+     journalctl -u devops-alert-processor -f
+     journalctl -u loki -f
+     journalctl -u promtail -f
+     tail -f /var/log/devops-processor.log
+
+  🧪 TEST COMMANDS
+     curl -s http://localhost:30751/health     | jq .
+     curl -s http://localhost:30751/test-snow  | jq .
+     curl -s http://localhost:30751/test-agent | jq .
+     curl -s http://localhost:30751/test-email | jq .
+     curl -s 'http://localhost:30751/test-loki?ns=default&mins=60' | jq .
+
+     # Simulate critical error → triggers full pipeline
+     kubectl exec -n default deploy/minikube-app -- \
+       /bin/sh -c 'echo "CRITICAL: NullPointerException at app.Main" >&2'
+
+     # Manual webhook fire
+     curl -s -X POST http://localhost:30751/webhook \
+       -H 'Content-Type: application/json' \
+       -d '{"alerts":[{"status":"firing","labels":{"severity":"critical","namespace":"default"}}]}'
+
+  Log: /tmp/monitoring-setup-20260517-011940.log
+══════════════════════════════════════════════════════
